@@ -8,6 +8,8 @@ import com.pm.patientservice.grpc.BillingServiceGrpcClient;
 import com.pm.patientservice.mapper.PatientMapper;
 import com.pm.patientservice.model.Patient;
 import com.pm.patientservice.repository.PatientRepository;
+
+import com.pm.patientservice.kafka.KafkaProducer;
 import org.springframework.stereotype.Service;
 import com.pm.patientservice.dto.PatientResponseDTO;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,11 +20,13 @@ import java.util.UUID;
 
 @Service
 public class PatientService {
-    private PatientRepository patientRepository;
-    private BillingServiceGrpcClient billingServiceGrpcClient;
-    public PatientService(PatientRepository patientRepository , BillingServiceGrpcClient billingServiceGrpcClient){
+    private final PatientRepository patientRepository;
+    private final BillingServiceGrpcClient billingServiceGrpcClient;
+    private final KafkaProducer kafkaProducer;
+    public PatientService(PatientRepository patientRepository , BillingServiceGrpcClient billingServiceGrpcClient, KafkaProducer kafkaProducer){
         this.patientRepository = patientRepository;
         this.billingServiceGrpcClient = billingServiceGrpcClient;
+        this.kafkaProducer = kafkaProducer;
     }
     public List<PatientResponseDTO> getPatients(){
         List<Patient> patients = patientRepository.findAll();
@@ -41,6 +45,7 @@ public class PatientService {
 
         billingServiceGrpcClient.createBillingAccount(patient.getId().toString(), patient.getName(),patient.getEmail());
 
+        kafkaProducer.sendEvent(patient);
         return PatientMapper.toDTO(patient);
     }
 
