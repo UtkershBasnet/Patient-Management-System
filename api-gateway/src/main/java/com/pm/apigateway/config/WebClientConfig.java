@@ -1,0 +1,2 @@
+package com.pm.apigateway.config;public class WebClientConfig {
+}
